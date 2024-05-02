@@ -17,6 +17,7 @@ import {
 } from "../utils";
 import AutoFormArray from "./array";
 import resolveDependencies from "../dependencies";
+import AutoFormDiscriminatedUnion from "./discriminated-union";
 
 function DefaultParent({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
@@ -81,6 +82,10 @@ export default function AutoFormObject<
           return null;
         }
 
+        if (zodBaseType === "ZodLiteral") {
+          return null;
+        }
+
         if (zodBaseType === "ZodObject") {
           return (
             <AccordionItem value={name} key={key} className="border-none">
@@ -110,6 +115,25 @@ export default function AutoFormObject<
               fieldConfig={fieldConfig?.[name] ?? {}}
               path={[...path, name]}
             />
+          );
+        }
+        if (zodBaseType === "ZodDiscriminatedUnion") {
+          return (
+            <AccordionItem value={name} key={key} className="border-none">
+              <AccordionTrigger>{itemName}</AccordionTrigger>
+              <AccordionContent className="p-2">
+                <AutoFormDiscriminatedUnion
+                  schema={item as unknown as z.ZodDiscriminatedUnion<any, any>}
+                  form={form}
+                  fieldConfig={
+                    (fieldConfig?.[name] ?? {}) as FieldConfig<
+                      z.infer<typeof item>
+                    >
+                  }
+                  path={[...path, name]}
+                />
+              </AccordionContent>
+            </AccordionItem>
           );
         }
 

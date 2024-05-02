@@ -6,10 +6,7 @@ import { beautifyObjectName, getBaseType, zodToHtmlInputProps } from "../utils";
 import resolveDependencies from "../dependencies";
 import AutoFormEnum from "./enum";
 import AutoFormObject from "./object";
-
-function DefaultParent({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
-}
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function AutoFormDiscriminatedUnion<
   SchemaType extends z.ZodDiscriminatedUnion<any, any>,
@@ -83,54 +80,55 @@ export default function AutoFormDiscriminatedUnion<
   }
 
   return (
-    <FormField
-      control={form.control}
-      name={key}
-      key={key}
-      render={({ field }) => {
-        const ParentElement = fieldConfigItem.renderParent ?? DefaultParent;
+    <Accordion type="multiple" className="space-y-5 border-none">
+      <FormField
+        control={form.control}
+        name={key}
+        key={key}
+        render={({ field }) => {
+          const defaultValue = fieldConfigItem.inputProps?.defaultValue;
 
-        const defaultValue = fieldConfigItem.inputProps?.defaultValue;
+          const value = field.value ?? defaultValue ?? "";
 
-        const value = field.value ?? defaultValue ?? "";
+          const _object = schema._def.optionsMap.get(value);
 
-        const _object = schema._def.optionsMap.get(value);
+          const fieldProps = {
+            ...zodToHtmlInputProps(item),
+            ...field,
+            ...fieldConfigItem.inputProps,
+            disabled: fieldConfigItem.inputProps?.disabled || isDisabled,
+            ref: undefined,
+            value: value,
+          };
 
-        const fieldProps = {
-          ...zodToHtmlInputProps(item),
-          ...field,
-          ...fieldConfigItem.inputProps,
-          disabled: fieldConfigItem.inputProps?.disabled || isDisabled,
-          ref: undefined,
-          value: value,
-        };
-
-        return (
-          <>
-            <ParentElement key={`${key}.parent`}>
-              <AutoFormEnum
-                zodInputProps={zodInputProps}
-                field={field}
-                fieldConfigItem={fieldConfigItem}
-                label={itemName}
-                isRequired={isRequired}
-                zodItem={item}
-                fieldProps={fieldProps}
-                className={fieldProps.className}
-              />
-
-              {value && _object ? (
-                <AutoFormObject
-                  schema={_object as z.ZodObject<any, any>}
-                  form={form}
-                  fieldConfig={fieldConfig}
-                  path={path}
+          return (
+            <AccordionItem value={name} key={key} className="border-none">
+              <AccordionTrigger>{itemName}</AccordionTrigger>
+              <AccordionContent className="p-2">
+                <AutoFormEnum
+                  zodInputProps={zodInputProps}
+                  field={field}
+                  fieldConfigItem={fieldConfigItem}
+                  label={itemName}
+                  isRequired={isRequired}
+                  zodItem={item}
+                  fieldProps={fieldProps}
+                  className={fieldProps.className}
                 />
-              ) : null}
-            </ParentElement>
-          </>
-        );
-      }}
-    />
+
+                {value && _object ? (
+                  <AutoFormObject
+                    schema={_object as z.ZodObject<any, any>}
+                    form={form}
+                    fieldConfig={fieldConfig}
+                    path={path}
+                  />
+                ) : null}
+              </AccordionContent>
+            </AccordionItem>
+          );
+        }}
+      />
+    </Accordion>
   );
 }

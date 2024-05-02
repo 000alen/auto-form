@@ -10,15 +10,16 @@ import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
 import { beautifyObjectName } from "../utils";
 import AutoFormObject from "./object";
+import AutoFormDiscriminatedUnion from "./discriminated-union";
 
 function isZodArray(
-  item: z.ZodArray<any> | z.ZodDefault<any>,
+  item: z.ZodArray<any> | z.ZodDefault<any>
 ): item is z.ZodArray<any> {
   return item instanceof z.ZodArray;
 }
 
 function isZodDefault(
-  item: z.ZodArray<any> | z.ZodDefault<any>,
+  item: z.ZodArray<any> | z.ZodDefault<any>
 ): item is z.ZodDefault<any> {
   return item instanceof z.ZodDefault;
 }
@@ -48,6 +49,23 @@ export default function AutoFormArray({
     ? item._def.innerType._def.type
     : null;
 
+  if (!itemDefType) {
+    return null;
+  }
+
+  const itemDefTypeName = itemDefType._def.typeName;
+
+  const InputComponent =
+    itemDefTypeName === "ZodObject"
+      ? AutoFormObject
+      : itemDefTypeName === "ZodDiscriminatedUnion"
+      ? AutoFormDiscriminatedUnion
+      : null;
+
+  if (!InputComponent) {
+    return null;
+  }
+
   return (
     <AccordionItem value={name} className="border-none">
       <AccordionTrigger>{title}</AccordionTrigger>
@@ -55,14 +73,14 @@ export default function AutoFormArray({
         {fields.map((_field, index) => {
           const key = _field.id;
           return (
-            <div className="mt-4 flex flex-col" key={`${key}`}>
-              <AutoFormObject
-                schema={itemDefType as z.ZodObject<any, any>}
+            <div className="flex flex-col mt-4" key={`${key}`}>
+              <InputComponent
+                schema={itemDefType as z.ZodAny}
                 form={form}
                 fieldConfig={fieldConfig}
                 path={[...path, index.toString()]}
               />
-              <div className="my-4 flex justify-end">
+              <div className="flex justify-end my-4">
                 <Button
                   variant="secondary"
                   size="icon"
@@ -82,7 +100,7 @@ export default function AutoFormArray({
           type="button"
           variant="secondary"
           onClick={() => append({})}
-          className="mt-4 flex items-center"
+          className="flex items-center mt-4"
         >
           <Plus className="mr-2" size={16} />
           Add
